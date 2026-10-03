@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ms"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lumba Kebun</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#cdeeb0;--ink:#1d3a17;--card:#fffbe8;--btn:#ff8a1f;--btnink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16301a;--ink:#f1ffd9;--card:#27441f;--btn:#ff9a3c;--btnink:#2a1500}}
+:root[data-theme="dark"]{--bg:#16301a;--ink:#f1ffd9;--card:#27441f;--btn:#ff9a3c;--btnink:#2a1500}
+*{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Fredoka',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:8px;-webkit-user-select:none;user-select:none}
+#top{width:100%;max-width:400px;display:flex;gap:8px;align-items:center}
+#ask{flex:1;background:var(--card);border-radius:20px;padding:6px 14px;font-size:clamp(22px,7vw,32px);font-weight:700;text-align:center;border:4px solid var(--btn)}
+#say{width:56px;height:56px;border-radius:50%;border:0;font-size:26px;background:var(--btn);color:var(--btnink)}
+#score{width:100%;max-width:400px;text-align:right;font-size:20px;font-weight:700;padding:2px 6px}
+#wrap{position:relative;width:100%;max-width:400px;border-radius:18px;overflow:hidden;border:4px solid var(--ink)}
+canvas{display:block;width:100%;height:auto}
+#flash{position:absolute;inset:0;pointer-events:none;opacity:0}
+#msg{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:44px;font-weight:700;pointer-events:none;opacity:0;text-shadow:0 3px 0 #0006;color:#fff}
+#over{position:absolute;inset:0;background:#000a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;text-align:center;padding:16px}
+#over h1{margin:0;font-size:34px}#over p{margin:0;font-size:22px}
+.go{font-family:inherit;font-size:28px;font-weight:700;padding:14px 36px;border-radius:40px;border:0;background:var(--btn);color:var(--btnink);box-shadow:0 6px 0 #0004}
+#ctl{width:100%;max-width:400px;display:flex;gap:10px;margin-top:10px}
+#ctl button{flex:1;height:72px;font-size:38px;border-radius:20px;border:0;background:var(--btn);color:var(--btnink);box-shadow:0 6px 0 #0004;touch-action:manipulation}
+#ctl button:active{transform:translateY(4px);box-shadow:0 2px 0 #0004}
+button:focus-visible{outline:4px solid #2b7bff;outline-offset:2px}
+.shake{animation:sh .45s}
+@keyframes sh{0%,100%{transform:translate(0)}15%{transform:translate(-12px,6px) rotate(-1.5deg)}30%{transform:translate(11px,-7px) rotate(1.5deg)}45%{transform:translate(-9px,5px)}60%{transform:translate(8px,-4px)}80%{transform:translate(-4px,2px)}}
+.pop{animation:pp .9s}
+@keyframes pp{0%{opacity:0;transform:scale(.4)}25%{opacity:1;transform:scale(1.15)}80%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.fl{animation:fl .6s}
+@keyframes fl{0%{opacity:.75}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.shake{animation-duration:.2s}}
+</style></head><body>
+<div id="top"><div id="ask">Tekan Mula</div><button id="say" aria-label="Dengar semula">🔊</button></div>
+<div id="score">⭐ 0 / 8</div>
+<div id="wrap"><canvas id="c" width="360" height="520"></canvas><div id="flash"></div><div id="msg"></div>
+<div id="over"><h1>🚗 Lumba Kebun</h1><p>Langgar gambar alatan yang betul!</p><button class="go" id="start">▶ Mula</button></div></div>
+<div id="ctl"><button id="L" aria-label="Kiri">⬅️</button><button id="R" aria-label="Kanan">➡️</button></div>
+<script>
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h){this.rect(x,y,w,h)}}
+document.body.style.touchAction='manipulation';
+const $=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d'),W=360,H=520,LW=W/3,CY=H-95;
+function L(g,a,b,c,d,col,w){g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(a,b);g.lineTo(c,d);g.stroke()}
+const WOOD='#a0683a',STEEL='#8d99a6';
+function cangkul(g,x,y){g.save();g.translate(x,y);L(g,-22,26,12,-12,WOOD,6);g.fillStyle=STEEL;g.beginPath();g.moveTo(2,-24);g.lineTo(26,-6);g.lineTo(18,2);g.lineTo(6,-10);g.closePath();g.fill();g.restore()}
+function penyodok(g,x,y){g.save();g.translate(x,y);L(g,0,-26,0,6,WOOD,6);L(g,-9,-26,9,-26,WOOD,6);g.fillStyle=STEEL;g.beginPath();g.moveTo(-12,4);g.lineTo(12,4);g.quadraticCurveTo(15,28,0,30);g.quadraticCurveTo(-15,28,-12,4);g.fill();g.restore()}
+function garpu(g,x,y){g.save();g.translate(x,y);L(g,0,-28,0,2,WOOD,6);L(g,-13,2,13,2,STEEL,5);[-13,-4.5,4.5,13].forEach(t=>L(g,t,2,t,28,STEEL,4));g.restore()}
+function jirat(g,x,y){g.save();g.translate(x,y);L(g,10,10,26,-10,'#2f6fb5',6);L(g,22,-14,30,-6,'#1d4f86',8);g.strokeStyle='#2f6fb5';g.lineWidth=5;g.beginPath();g.arc(-18,6,12,Math.PI*.5,Math.PI*1.5);g.stroke();g.beginPath();g.moveTo(-14,-8);g.quadraticCurveTo(-2,-26,10,-8);g.stroke();g.fillStyle='#3d8bdc';g.beginPath();g.roundRect(-18,-6,32,30,6);g.fill();g.restore()}
+function sorong(g,x,y){g.save();g.translate(x,y);L(g,-12,8,-30,-6,WOOD,5);L(g,-4,10,-12,26,'#555',4);g.fillStyle='#2e9e4f';g.beginPath();g.moveTo(-26,-12);g.lineTo(16,-12);g.lineTo(8,12);g.lineTo(-18,12);g.closePath();g.fill();g.fillStyle='#222';g.beginPath();g.arc(18,18,9,0,7);g.fill();g.fillStyle='#ccc';g.beginPath();g.arc(18,18,3,0,7);g.fill();g.restore()}
+function guntingPokok(g,x,y){g.save();g.translate(x,y);L(g,-12,-26,0,0,STEEL,5);L(g,12,-26,0,0,STEEL,5);L(g,0,0,14,28,'#d62828',6);L(g,0,0,-14,28,'#d62828',6);g.fillStyle='#333';g.beginPath();g.arc(0,0,4,0,7);g.fill();g.restore()}
+const TOOLS=[[cangkul,'CANGKUL'],[penyodok,'PENYODOK'],[garpu,'GARPU TANAH'],[jirat,'JIRAT'],[sorong,'KERETA SORONG'],[guntingPokok,'GUNTING POKOK']];
+const OTHER=[['⚽','BOLA'],['🍔','BURGER'],['📱','TELEFON'],['🧸','PATUNG']];
+const TOTAL=8;
+let lane=1,row=null,score=0,run=false,carX=LW*1.5,off=0,lastT=0,ac=null,q=0,target=null,timer=0;
+function A(){if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac}
+function tone(f,t0,d,type='sine',v=.25){const a=A(),o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.value=f;gn.gain.setValueAtTime(v,a.currentTime+t0);gn.gain.exponentialRampToValueAtTime(.001,a.currentTime+t0+d);o.connect(gn).connect(a.destination);o.start(a.currentTime+t0);o.stop(a.currentTime+t0+d)}
+function crash(){const a=A(),n=a.sampleRate*.25,b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=a.createBufferSource(),gn=a.createGain();s.buffer=b;gn.gain.value=.4;s.connect(gn).connect(a.destination);s.start()}
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ms-MY';u.rate=.8;u.pitch=1.1;speechSynthesis.speak(u)}catch(e){}}
+function shuffle(a){return a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1])}
+function nextRow(){
+  if(!target||!target.keep){target=TOOLS[Math.floor(Math.random()*TOOLS.length)]}
+  const others=shuffle(TOOLS.filter(t=>t!==target).concat(OTHER)).slice(0,2);
+  row={y:-60,items:shuffle([target,...others]),done:false,hit:-1};
+  $('ask').textContent='Langgar: '+target[1];
+  say('Langgar '+target[1].toLowerCase());
+}
+function fx(color,txt){const f=$('flash');f.style.background=color;f.classList.remove('fl');void f.offsetWidth;f.classList.add('fl');
+  const m=$('msg');m.textContent=txt;m.classList.remove('pop');void m.offsetWidth;m.classList.add('pop');
+  const w=$('wrap');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');
+  if(navigator.vibrate)navigator.vibrate(80)}
+function resolve(){
+  row.done=true;row.hit=lane;crash();
+  const ok=row.items[lane]===target;
+  if(ok){score++;$('score').textContent='⭐ '+score+' / '+TOTAL;
+    [523,659,784,1047].forEach((f,i)=>tone(f,.12+i*.09,.25,'triangle'));
+    fx('#37d67a','BETUL! 🎉');say('Bagus! Itu '+target[1].toLowerCase());target.keep=false;
+    if(score>=TOTAL){timer=setTimeout(finish,1700);return}
+  }else{
+    tone(240,.1,.25,'sawtooth',.12);tone(180,.3,.3,'sawtooth',.12);
+    fx('#ff9f1c','Cuba lagi 🙂');say('Cuba lagi. Itu '+row.items[lane][1].toLowerCase());target.keep=true;
+  }
+  timer=setTimeout(()=>{if(run)nextRow()},2000);
+}
+function finish(){run=false;$('over').style.display='flex';$('over').innerHTML='<h1>🏆 Hebat!</h1><p>⭐⭐⭐⭐⭐</p><p>Kamu kenal semua alatan berkebun!</p><button class="go" id="start2">🔁 Main lagi</button>';
+  [523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.13,.3,'triangle'));say('Hebat! Tahniah!');$('start2').onclick=begin}
+function begin(){A();clearTimeout(timer);score=0;lane=1;carX=LW*1.5;target=null;run=true;$('score').textContent='⭐ 0 / '+TOTAL;$('over').style.display='none';nextRow();lastT=performance.now();requestAnimationFrame(loop)}
+function move(d){lane=Math.max(0,Math.min(2,lane+d));tone(420+lane*120,0,.08,'square',.08)}
+function draw(dt){
+  g.fillStyle='#5fbf4a';g.fillRect(0,0,W,H);
+  g.fillStyle='#4aa63a';for(let i=-1;i<9;i++){const y=((i*70+off)%(H+70));g.fillRect(8,y,14,30);g.fillRect(W-22,y+20,14,30)}
+  g.fillStyle='#4b4f58';g.fillRect(24,0,W-48,H);
+  g.fillStyle='#ffe14d';for(let i=-1;i<12;i++){const y=((i*60+off)%(H+60))-20;g.fillRect(LW-3,y,6,32);g.fillRect(LW*2-3,y,6,32)}
+  g.fillStyle='#fff';g.fillRect(24,0,5,H);g.fillRect(W-29,0,5,H);
+  if(row){g.textAlign='center';
+    row.items.forEach((it,i)=>{const x=LW*i+LW/2,y=row.y;
+      if(row.done&&row.hit===i){g.globalAlpha=.35}
+      g.fillStyle='#fffbe8';g.beginPath();g.roundRect(x-52,y-40,104,92,16);g.fill();
+      if(typeof it[0]==='function')it[0](g,x,y-8);else{g.font='46px serif';g.textBaseline='middle';g.fillStyle='#000';g.fillText(it[0],x,y-8)}
+      g.textBaseline='middle';g.font='bold 12px Fredoka,sans-serif';g.fillStyle='#1d3a17';g.fillText(it[1],x,y+38);g.globalAlpha=1})}
+  // kereta
+  const x=carX,y=CY;g.fillStyle='#0003';g.fillRect(x-26,y+34,52,8);
+  g.fillStyle='#e63946';g.beginPath();g.roundRect(x-24,y-38,48,78,12);g.fill();
+  g.fillStyle='#9ad8ff';g.fillRect(x-17,y-18,34,18);
+  g.fillStyle='#fff';g.fillRect(x-4,y-38,8,78);
+  g.fillStyle='#222';[[-29,-26],[24,-26],[-29,16],[24,16]].forEach(p=>g.fillRect(x+p[0],y+p[1],6,18));
+  g.fillStyle='#ffe14d';g.fillRect(x-20,y-38,8,5);g.fillRect(x+12,y-38,8,5);
+}
+function loop(t){
+  if(!run)return;const dt=Math.min(40,t-lastT)/1000;lastT=t;
+  carX+=((lane*LW+LW/2)-carX)*Math.min(1,dt*14);
+  if(row&&!row.done){off+=dt*160;row.y+=dt*150;if(row.y+34>=CY-30)resolve()}
+  else if(row&&row.done){off+=dt*40;row.y+=dt*60}
+  draw(dt);requestAnimationFrame(loop)}
+$('start').onclick=begin;$('L').onclick=()=>move(-1);$('R').onclick=()=>move(1);
+$('say').onclick=()=>{A();if(target)say('Langgar '+target[1].toLowerCase())};
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();move(e.clientX<r.left+r.width/2?-1:1)});
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1)});
+draw(0);
+</script></body></html>
